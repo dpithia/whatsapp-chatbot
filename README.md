@@ -58,4 +58,4 @@ npm run dev
 - WhatsApp
 
 ## Demo
-![](https://github.com/whatsapp-chatbot/demo.gif)
+![](https://github.com/dpithia/whatsapp-chatbot/demo.gif)
