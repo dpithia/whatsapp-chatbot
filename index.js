@@ -15,61 +15,27 @@ let roster = [];
 let waitlist = [];
 const MAX_PLAYERS = 20;
 
-async function sendInteractiveMessage(to) {
-  try {
-    await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
-      to: `whatsapp:${to}`,
-      body: "Hockey Roster Bot - Select an option:",
-      persistentAction: [
-        `menu:View Options:
-                    [
-                        {
-                            "type": "text",
-                            "title": "Join",
-                            "payload": "!join"
-                        },
-                        {
-                            "type": "text",
-                            "title": "Leave",
-                            "payload": "!leave"
-                        },
-                        {
-                            "type": "text",
-                            "title": "View Roster",
-                            "payload": "!roster"
-                        },
-                        {
-                            "type": "text",
-                            "title": "View Waitlist",
-                            "payload": "!waitlist"
-                        }
-                    ]`,
-      ],
-    });
-  } catch (error) {
-    console.error("Error sending interactive message:", error);
-  }
-}
-
 async function sendWhatsAppMessage(to, message) {
   try {
     console.log("Sending message to:", to);
     console.log("Message content:", message);
 
-    const response = await client.messages.create({
+    await client.messages.create({
       from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
       to: `whatsapp:${to}`,
-      body: message,
+      body: message + "\n\n" + createMenuText(),
     });
-
-    console.log("Message sent successfully:", response.sid);
-
-    // Send interactive menu after each message
-    await sendInteractiveMessage(to);
   } catch (error) {
     console.error("Error sending message:", error);
   }
+}
+
+function createMenuText() {
+  return `Available Commands:
+1️⃣ Send *join* to join roster
+2️⃣ Send *leave* to leave roster
+3️⃣ Send *roster* to view roster
+4️⃣ Send *waitlist* to view waitlist`;
 }
 
 app.post("/webhook", async (req, res) => {
@@ -83,12 +49,11 @@ app.post("/webhook", async (req, res) => {
       name: playerName,
     };
 
-    // Handle button responses
-    const command = incomingMsg.toLowerCase();
+    const command = incomingMsg.toLowerCase().trim();
 
     switch (command) {
-      case "!join":
       case "join":
+      case "1":
         if (roster.some((p) => p.phone === from)) {
           await sendWhatsAppMessage(from, "You're already in the roster!");
         } else if (roster.length < MAX_PLAYERS) {
@@ -106,8 +71,8 @@ app.post("/webhook", async (req, res) => {
         }
         break;
 
-      case "!leave":
       case "leave":
+      case "2":
         const index = roster.findIndex((p) => p.phone === from);
         if (index > -1) {
           roster.splice(index, 1);
@@ -128,8 +93,8 @@ app.post("/webhook", async (req, res) => {
         }
         break;
 
-      case "!roster":
-      case "view roster":
+      case "roster":
+      case "3":
         if (roster.length === 0) {
           await sendWhatsAppMessage(from, "Roster is empty!");
         } else {
@@ -143,8 +108,8 @@ app.post("/webhook", async (req, res) => {
         }
         break;
 
-      case "!waitlist":
-      case "view waitlist":
+      case "waitlist":
+      case "4":
         if (waitlist.length === 0) {
           await sendWhatsAppMessage(from, "Waitlist is empty!");
         } else {
@@ -155,10 +120,13 @@ app.post("/webhook", async (req, res) => {
         }
         break;
 
-      case "!help":
       case "menu":
+      case "help":
+        await sendWhatsAppMessage(from, "Hockey Roster Bot Commands:");
+        break;
+
       default:
-        await sendInteractiveMessage(from);
+        await sendWhatsAppMessage(from, "Welcome to Hockey Roster Bot!");
         break;
     }
 
